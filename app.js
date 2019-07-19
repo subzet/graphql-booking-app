@@ -10,7 +10,8 @@ const User = require('./models/user');
 
 //Database configuration.
 const mongoose = require('mongoose');
-let dev_db_url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0-jdb9k.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`;
+//let dev_db_url = `mongodb+srv://${process.env.MONGO_USER}:${process.env.MONGO_PASS}@cluster0-jdb9k.mongodb.net/${process.env.MONGO_DB}?retryWrites=true&w=majority`;
+let dev_db_url = 'mongodb://localhost:27017/bookingApp'
 let mongoDB = process.env.MONGODB_URI || dev_db_url;
 
 let port = 3000;
@@ -22,6 +23,20 @@ mongoose.connect(mongoDB).then( () => app.listen(port, () => {
 });
 
 const app = express();
+
+const events = eventsId => {
+    return Event.find({_id: {$in : eventsId}})
+}
+
+const user = userId => {
+    return User.findById(userId)
+    .then( result => {
+        return {...result._doc,_id: result.id, password: null}
+    })
+    .catch(err =>{
+        throw err;
+    })
+}
 
 app.use(bodyParser.json()); //Uses body parser middleware.
 
@@ -61,7 +76,6 @@ app.use('/graphql', graphqlHttp({ //graphql routing configuration
     
         type RootQuery {
             events: [Event!]!
-            
         }
         
         type RootMutation {
@@ -77,15 +91,14 @@ app.use('/graphql', graphqlHttp({ //graphql routing configuration
     rootValue: {
         
         events: () =>  {
-            return Event.find().populate('creator')
+            return Event.find()
             .then(events => {
                 return events.map(event => {
                     return {
                         ...event._doc, 
                         _id: event._doc._id.toString(),
-                        creator: {
-                        ...event._doc.creator._doc, _id: event._doc.creator.id
-                    }}; 
+                        creator: user.bind(this, event._doc.creator)
+                    }; 
                     //Returns only the event data and not the metadata from mongoDB.
                     //Also gets ID (ObjectID) and returns it as an id.
                 });                
@@ -101,14 +114,14 @@ app.use('/graphql', graphqlHttp({ //graphql routing configuration
                 description: args.eventInput.description,
                 price: +args.eventInput.price,
                 date: new Date(args.eventInput.date),
-                creator: "5d30f28cb8a8de6f5cb64e0a" //Dummy test
+                creator: "5d31ca6a1b0d3f5948a80ee7" //Dummy test
             })
             let createdEvent = null;
             return event
             .save()
             .then(result => {
                 createdEvent = {...result._doc, _id : result.id}
-                return User.findById('5d30f28cb8a8de6f5cb64e0a');
+                return User.findById('5d31ca6a1b0d3f5948a80ee7');
             })
             .then(user => {
                 if(!user){
