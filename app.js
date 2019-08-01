@@ -5,6 +5,8 @@ const graphqlHttp = require('express-graphql');
 const graphqlSchema = require('./graphql/schema/index');
 const graphqlResolvers = require('./graphql/resolvers/index');
 
+const isAuth = require('./middleware/is-auth');
+
 
 //Database configuration.
 const mongoose = require('mongoose');
@@ -23,6 +25,8 @@ mongoose.connect(mongoDB).then( () => app.listen(port, () => {
 const app = express();
 
 app.use(bodyParser.json()); //Uses body parser middleware.
+
+app.use(isAuth);//Uses middleware isAuth function in every request.
 
 app.get('/', (req,res, next)  => {
     res.send("Express says hi!");
